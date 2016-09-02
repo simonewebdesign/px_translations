@@ -1,0 +1,164 @@
+port module Translation
+    exposing
+        ( Language(..)
+        , initialLanguage
+        , saveLocale
+        , languages
+        , fromLocaleLanguage
+        , toLocaleLanguage
+        , fromStringLanguage
+        , translate
+        )
+
+{-| This module provides a simple way to translate contents in any language
+we want to support.
+
+# Types
+@docs Language
+
+# Values
+@docs initialLanguage, languages
+
+# Functions
+@docs translate, fromLocaleLanguage, toLocaleLanguage, fromStringLanguage
+
+# Ports
+@docs saveLocale
+-}
+
+import Dict
+
+{-| Currently supported languages.
+-}
+type Language
+    = English<%= for {_, {lang, _}} <- languages do %>
+    | <%= lang %><% end %>
+
+
+initialLanguage : Language
+initialLanguage =
+    English
+
+
+{-| Outbound port to JavaScript for saving the locale in the browser.
+-}
+port saveLocale : String -> Cmd msg
+
+
+{-| A list of currently supported languages. We need this because the
+LanguageSelector needs to know which languages are available, but we can't
+just use Language because union types are not iterable.
+-}
+languages : List ( String, String )
+languages =
+    [ ( "English", "English" )<%= for {_, {lang1, lang2}} <- languages do %>
+    , ( "<%= lang1 %>", "<%= lang2 %>" )<% end %>
+    ]
+
+
+{-| Example:
+
+    fromLocaleLanguage "ja" == Japanese
+    fromLocaleLanguage "not a locale" == English
+-}
+fromLocaleLanguage : String -> Language
+fromLocaleLanguage str =
+    case str of
+        "en" ->
+            English
+
+        <%= for {locale, {lang, _}} <- languages do %>"<%= String.slice locale, 0, 2 %>" ->
+            <%= lang %>
+
+        <% end %>default ->
+            English
+
+
+{-| Example:
+
+    toLocaleLanguage Japanese == "ja"
+-}
+toLocaleLanguage : Language -> String
+toLocaleLanguage lang =
+    case lang of
+        English ->
+            "en"
+
+        <%= for {locale, {lang, _}} <- languages do %><%= lang %> ->
+            "<%= String.slice locale, 0, 2 %>"
+
+        <% end %>
+{-| Example:
+
+    fromStringLanguage "Japanese" == Japanese
+    fromStringLanguage "Not a language" == English
+-}
+fromStringLanguage : String -> Language
+fromStringLanguage str =
+    case str of
+        "English" ->
+            English
+
+        <%= for {_, {lang, _}} <- languages do %>"<%= lang %>" ->
+            <%= lang %>
+
+        <% end %>default ->
+            English
+
+
+{-| Given a language and a text to translate, return the translated text.
+
+Example:
+
+    translate Spanish "Please login" == "Por favor haga login"
+    translate English "Logout" == "Logout"
+    translate Japanese "Not a translation key" == "Not a translation key"
+-}
+translate : Language -> String -> String
+translate lang key =
+    if key == "" then
+        ""
+    else
+        case Dict.get key model of
+            Nothing ->
+                Debug.log "Missing translation key" key
+
+            Just [ <%= Enum.map_join(languages, ", ", fn({_, {lang, _}}) -> "( #{lang}, #{String.downcase lang} )" end) %> ] ->
+                case lang of
+                    English ->
+                        key
+
+                    <%= for {_, {lang, _}} <- languages do %><%= lang %> ->
+                        <%= String.downcase lang %>
+
+                    <% end %>
+
+            otherwise ->
+                Debug.crash "Translations are not in the expected shape"
+
+
+{-| Used internally to retrieve the right translated text.
+Languages are in the same (alphabetical) order they're declared in type Language.
+-}
+type alias Model =
+    Dict.Dict Key (List Translation)
+
+
+type alias Key =
+    String
+
+
+type alias Translation =
+    ( Language, String )
+
+
+model : Model
+model =
+    Dict.fromList
+        [<%= Enum.map_join(translations, "\n        ,", fn {key, tuples} ->
+        ~s( ( "#{key}"\n          , [) <>
+            Enum.map_join(tuples, "\n            ,", fn {language, translation} ->
+                " ( #{language}, \"#{translation}\" )"
+            end) <> "\n            ]\n          )"
+        end) %>
+        ]
