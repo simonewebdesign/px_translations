@@ -105,12 +105,10 @@ defmodule Translations do
         end)
       end
 
-    {:ok, english_po_file} = Gettext.PO.parse_file "#{path}/default.pot"
 
-
-    keys = Enum.reduce(english_po_file.translations, [], fn(item, acc) ->
-      acc ++ [List.first(item.msgid)]
-    end)
+    keys =
+      english_translations(path)
+      |> collect_keys
 
 
     translations = Enum.reduce(selected_languages, [], fn
@@ -132,5 +130,29 @@ defmodule Translations do
     end)
 
     IO.puts EEx.eval_file @template, [languages: selected_languages, translations: translations]
+  end
+
+
+  defp english_translations(path_to_pot_file) do
+    case Gettext.PO.parse_file "#{path_to_pot_file}/default.pot" do
+      {:ok, parsed} ->
+        IO.puts "hah"
+        parsed.translations
+
+      {:error, _line, reason} ->
+        raise "[#{reason}] There is an error with the contents of the `.pot` file."
+
+      {:error, reason} ->
+        raise "[#{reason}] There is an error with reading the `.pot` file."
+    end
+  end
+
+
+  defp collect_keys(translations) do
+    IO.puts " this is what I got as argument in collect_keys"
+    IO.inspect translations
+    Enum.reduce(translations, [], fn(item, acc) ->
+      acc ++ [List.first(item.msgid)]
+    end)
   end
 end
