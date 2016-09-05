@@ -7,16 +7,16 @@ defmodule TranslationsTest do
 
   test "generates Italian" do
     fun = fn ->
-      assert Translations.generate(["it_IT"], @path) == :ok
+      assert Translations.generate(%{path: @path, languages: ["it_IT"]}) == :ok
     end
 
     assert Regex.match?(~r/Italiano/, capture_io(fun))
   end
 
 
-  test "generates all languages when no option provided" do
+  test "generates all languages when no languages provided" do
     fun = fn ->
-      assert Translations.generate([], @path) == :ok
+      assert Translations.generate(%{path: @path, languages: []}) == :ok
     end
 
     stdout = capture_io(fun)

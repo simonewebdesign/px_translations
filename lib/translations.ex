@@ -5,7 +5,7 @@ defmodule Translations do
   @template Path.join(@root_dir, "lib/template.eex")
 
   @moduledoc """
-  Usage: translations [PATH] [OPTIONS]
+  Usage: translations <PATH> [OPTIONS]
 
   Options:
       -l, --languages es,it,ja         Which language will be included
@@ -16,12 +16,9 @@ defmodule Translations do
   Translation.elm is needed by px_*_ui components in order to show translated content.
   This executable writes to stdin, here's an example usage:
 
-      ./translation.rb --languages es,it,ja > src/Translation.elm
+      ./translations path/to/gettext --languages es_ES,it_IT,ja_JP > src/Translation.elm
 
-  The first argument is the path to the gettext folder (i.e. the one containing *.po files).
-  It's an optional argument, if you don't provide it (like in the example above)
-  we assume it's the current folder.
-
+  The first argument is the path to the gettext folder.
   You can provide languages via the --languages option.
   If you don't, all the available languages will be included.
 
@@ -31,7 +28,7 @@ defmodule Translations do
   def main(argv) do
     argv
     |> parse_args
-    |> process
+    |> generate
   end
 
   @doc """
@@ -49,15 +46,10 @@ defmodule Translations do
       { [ help: true ], _, _ } -> :help
 
       { [ languages: languages ], [ path ], _ } ->
-          %{ languages: String.split(languages, ","),
-             path: path
-           }
-
-      { [ languages: languages ], _, _ } ->
-        %{ languages: String.split(languages, ",") }
+        %{ path: path, languages: String.split(languages, ",") }
 
       { _, [ path ], _ } ->
-        %{ path: path }
+        %{ path: path, languages: [] }
 
       { _, _, _ } -> :help
     end
@@ -66,31 +58,16 @@ defmodule Translations do
   @doc """
   Displays a help message.
   """
-  def process(:help) do
+  def generate(:help) do
     IO.puts @moduledoc
     System.halt(0)
-  end
-
-  def process(%{languages: languages, path: path}) do
-    path = if path == "", do: ".", else: path
-    generate(languages, path)
-  end
-
-  def process(%{languages: languages}) do
-    path = "."
-    generate(languages, path)
-  end
-
-  def process(%{path: path}) do
-    path = if path == "", do: ".", else: path
-    generate([], path)
   end
 
   @doc """
   Generates Translation.elm according to the chosen languages and the path to
   gettext folder.
   """
-  def generate(languages, path) do
+  def generate(%{path: path, languages: languages}) do
     selected_languages =
       if Enum.empty? languages do
         available_languages
