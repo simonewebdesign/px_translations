@@ -2,7 +2,7 @@ defmodule TranslationsTest do
   use ExUnit.Case
   import ExUnit.CaptureIO
 
-  @path "../../px_data_capture/priv/gettext"
+  @path "../px_data_capture/priv/gettext"
 
 
   test "generates Italian" do

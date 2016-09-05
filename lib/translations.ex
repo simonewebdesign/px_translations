@@ -136,21 +136,18 @@ defmodule Translations do
   defp english_translations(path_to_pot_file) do
     case Gettext.PO.parse_file "#{path_to_pot_file}/default.pot" do
       {:ok, parsed} ->
-        IO.puts "hah"
         parsed.translations
 
       {:error, _line, reason} ->
-        raise "[#{reason}] There is an error with the contents of the `.pot` file."
+        raise "[#{reason}] Error while parsing the `.pot` file."
 
       {:error, reason} ->
-        raise "[#{reason}] There is an error with reading the `.pot` file."
+        raise ~s([#{reason}] Error while opening the `.pot` file. Maybe the path "#{path_to_pot_file}/default.pot" is incorrect?)
     end
   end
 
 
   defp collect_keys(translations) do
-    IO.puts " this is what I got as argument in collect_keys"
-    IO.inspect translations
     Enum.reduce(translations, [], fn(item, acc) ->
       acc ++ [List.first(item.msgid)]
     end)
