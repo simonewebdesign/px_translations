@@ -124,7 +124,7 @@ defmodule Translations do
 
   defp available_languages do
     [ {"it_IT", {"Italian", "Italiano"}},
-        {"ja_JP", {"Japanese", "日本語"}},
-        {"es_ES", {"Spanish", "Español"}}]
+      {"ja_JP", {"Japanese", "日本語"}},
+      {"es_ES", {"Spanish", "Español"}}]
   end
 end
