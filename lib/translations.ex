@@ -106,8 +106,8 @@ defmodule Translations do
       {:ok, parsed} ->
         parsed.translations
 
-      {:error, _line, reason} ->
-        raise ~s([#{reason}] Error while parsing the file: "#{path}")
+      {:error, line, reason} ->
+        raise ~s([#{reason}] Error while parsing the file: "#{path}:#{line}")
 
       {:error, reason} ->
         raise ~s([#{reason}] Error while opening the file. Maybe the path "#{path}" is incorrect?)
