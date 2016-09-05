@@ -91,11 +91,6 @@ defmodule Translations do
   gettext folder.
   """
   def generate(languages, path) do
-    available_languages =
-      [ {"it_IT", {"Italian", "Italiano"}},
-        {"ja_JP", {"Japanese", "日本語"}},
-        {"es_ES", {"Spanish", "Español"}}]
-
     selected_languages =
       if Enum.empty? languages do
         available_languages
@@ -105,51 +100,54 @@ defmodule Translations do
         end)
       end
 
-
-    keys =
-      english_translations(path)
-      |> collect_keys
-
-
     translations = Enum.reduce(selected_languages, [], fn
-      {locale, {language, _}}, translations_acc ->
-        {:ok, po} = Gettext.PO.parse_file "#{path}/#{locale}/LC_MESSAGES/default.po"
+      {locale, {language, _}}, acc ->
+        translations =
+          parse_translations_file("#{path}/#{locale}/LC_MESSAGES/default.po")
+          |> Enum.reduce([], fn(translation, acc) ->
+            [ { List.first(translation.msgid), { language, List.first(translation.msgstr) } } ] ++ acc
+          end)
 
-        translations = Enum.reduce(po.translations, [], fn(translation, acc) ->
-          [{ List.first(translation.msgid), { language, List.first(translation.msgstr) } }] ++ acc
-        end)
-
-        translations_acc ++ translations
+        acc ++ translations
     end)
 
+    translations =
+      parse_translations_file("#{path}/default.pot")
+      |> collect_keys
+      |> Enum.reduce([], fn(key, acc) ->
+           translations = for {^key, t} <- translations, do: t
 
-    translations = Enum.reduce(keys, [], fn(key, acc) ->
-      translations = for {^key, t} <- translations, do: t
-
-      acc ++ [{key, translations}]
-    end)
+           acc ++ [{key, translations}]
+         end)
 
     IO.puts EEx.eval_file @template, [languages: selected_languages, translations: translations]
   end
 
 
-  defp english_translations(path_to_pot_file) do
-    case Gettext.PO.parse_file "#{path_to_pot_file}/default.pot" do
+  defp parse_translations_file(path) do
+    case Gettext.PO.parse_file path do
       {:ok, parsed} ->
         parsed.translations
 
       {:error, _line, reason} ->
-        raise "[#{reason}] Error while parsing the `.pot` file."
+        raise ~s([#{reason}] Error while parsing the file: "#{path}")
 
       {:error, reason} ->
-        raise ~s([#{reason}] Error while opening the `.pot` file. Maybe the path "#{path_to_pot_file}/default.pot" is incorrect?)
+        raise ~s([#{reason}] Error while opening the file. Maybe the path "#{path}" is incorrect?)
     end
   end
 
 
   defp collect_keys(translations) do
-    Enum.reduce(translations, [], fn(item, acc) ->
-      acc ++ [List.first(item.msgid)]
+    Enum.reduce(translations, [], fn(translation, acc) ->
+      acc ++ [ List.first(translation.msgid) ]
     end)
+  end
+
+
+  defp available_languages do
+    [ {"it_IT", {"Italian", "Italiano"}},
+        {"ja_JP", {"Japanese", "日本語"}},
+        {"es_ES", {"Spanish", "Español"}}]
   end
 end
