@@ -18,4 +18,4 @@ erl_crash.dump
 
 # This executable binary will be automatically built by the ../configure script.
 # It can also be built manually by running `mix escript.build`.
-translations
+/translations
